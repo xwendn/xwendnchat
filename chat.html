@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        #chat-container {
+            display: none;
+        }
+        #login-form, #chat-container {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        input[type="text"], input[type="password"], button {
+            width: 100%;
+            margin-top: 10px;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #messages {
+            margin-top: 20px;
+            overflow-y: auto;
+            max-height: 300px;
+        }
+        .input-group {
+            display: flex;
+            align-items: center;
+        }
+        .input-group input[type="text"], .input-group input[type="password"] {
+            flex: 1;
+            margin-right: 10px;
+        }
+        .message-item {
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #fff;
+        }
+        .message-item:hover {
+            background-color: #f0f0f0;
+        }
+        #dashboard-container {
+            display: none;
+        }
+        .delete-icon {
+            float: right;
+            color: red;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="login-form">
+        <h2>Login</h2>
+        <div class="input-group">
+            <input type="text" id="username" placeholder="Username">
+        </div>
+        <div class="input-group">
+            <input type="password" id="password" placeholder="Password">
+            <button onclick="login()">Login</button>
+        </div>
+    </div>
+
+    <div id="chat-container">
+        <h2>Welcome, <span id="username-display"></span>!</h2>
+        <div id="messages"></div>
+        <input type="text" id="message" placeholder="Type your message...">
+        <button onclick="sendMessage()">Send</button>
+    </div>
+
+    <div id="dashboard-container">
+        <h2>Admin Dashboard</h2>
+        <p>Total Users: <span id="total-users"></span></p>
+        <h3>Messages:</h3>
+        <div id="message-list"></div>
+        <button onclick="hideDashboard()">Close Dashboard</button>
+    </div>
+
+    <script>
+        // Function to get messages from local storage
+        function getMessages() {
+            return JSON.parse(localStorage.getItem("chatMessages")) || [];
+        }
+
+        // Function to save messages to local storage
+        function saveMessages(messages) {
+            localStorage.setItem("chatMessages", JSON.stringify(messages));
+        }
+
+        // Function to load messages from local storage and display them
+        function loadMessages() {
+            var messagesContainer = document.getElementById("messages");
+            messagesContainer.innerHTML = "";
+            var messages = getMessages();
+            messages.forEach(function(message, index) {
+                var messageElement = document.createElement("div");
+                messageElement.className = "message-item";
+                messageElement.innerHTML = "<strong>" + message.sender + ":</strong> " + message.text;
+                messagesContainer.appendChild(messageElement);
+            });
+            scrollToBottom(messagesContainer); // Scroll to the bottom after loading messages
+        }
+
+        // Function to scroll to the bottom of a container
+        function scrollToBottom(container) {
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // Function to handle login
+        function login() {
+            var username = document.getElementById("username").value;
+            var password = document.getElementById("password").value;
+
+            // Regular user login
+            if (username && !password) {
+                document.getElementById("login-form").style.display = "none";
+                document.getElementById("chat-container").style.display = "block";
+                document.getElementById("username-display").innerText = username;
+                loadMessages(); // Load existing messages when user logs in
+            } 
+            // Admin login
+            else if (username === "HavalKamal" && password === "Haval1212@") {
+                document.getElementById("login-form").style.display = "none";
+                document.getElementById("chat-container").style.display = "block";
+                document.getElementById("username-display").innerText = "Admin (HavalKamal)";
+                loadMessages(); // Load existing messages when admin logs in
+                document.getElementById("dashboard-container").style.display = "block"; // Show dashboard for admin
+                showDashboard(); // Populate dashboard with data
+            } else {
+                alert("Invalid username or password.");
+            }
+        }
+
+        // Function to handle sending messages
+        function sendMessage() {
+            var messageInput = document.getElementById("message");
+            var messageText = messageInput.value;
+            if (messageText.trim() !== "") {
+                var username = document.getElementById("username-display").innerText;
+                var message = { sender: username, text: messageText };
+                var messages = getMessages();
+                messages.push(message);
+                saveMessages(messages);
+                loadMessages();
+                messageInput.value = "";
+
+                // Auto-save message to local storage
+                setTimeout(function() {
+                    saveMessages(messages);
+                }, 1000); // Save message after 1 second
+            } else {
+                alert("Please enter a message.");
+            }
+        }
+
+        // Function to show admin dashboard
+        function showDashboard() {
+            var messages = getMessages();
+            var users = new Set(messages.map(message => message.sender));
+            document.getElementById("total-users").innerText = users.size;
+
+            var messageList = document.getElementById("message-list");
+            messageList.innerHTML = "";
+            messages.forEach(function(message, index) {
+                var messageElement = document.createElement("div");
+                messageElement.className = "message-item";
+                messageElement.innerHTML = "<strong>" + message.sender + ":</strong> " + message.text;
+                var deleteIcon = document.createElement("span");
+                deleteIcon.className = "delete-icon";
+                deleteIcon.innerHTML = "&#10006;";
+                deleteIcon.onclick = function() { deleteMessage(index); };
+                messageElement.appendChild(deleteIcon);
+                messageList.appendChild(messageElement);
+            });
+        }
+
+        // Function to hide admin dashboard
+        function hideDashboard() {
+            document.getElementById("dashboard-container").style.display = "none";
+        }
+
+        // Function to delete a message
+        function deleteMessage(index) {
+            var messages = getMessages();
+            messages.splice(index, 1);
+            saveMessages(messages);
+            loadMessages(); // Reload messages after deletion
+        }
+    </script>
+</body>
+</html>
